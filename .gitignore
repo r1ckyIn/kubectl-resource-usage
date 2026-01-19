@@ -1,0 +1,41 @@
+# Binaries
+kubectl-resource_usage
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test binary
+*.test
+
+# Output of the go coverage tool
+*.out
+
+# Dependency directories
+vendor/
+
+# Go workspace file
+go.work
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Build output
+dist/
+bin/
+
+# Local Chinese documentation
+*_CN.md
+*.cn.md
+
+# Debug files
+*.log
+debug/
