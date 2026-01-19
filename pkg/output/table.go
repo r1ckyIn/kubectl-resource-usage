@@ -45,39 +45,6 @@ func (f *TableFormatter) Format(w io.Writer, podUsages []calculator.PodUsage) er
 	return nil
 }
 
-// formatCPU formats millicores to human readable format
-func formatCPU(milliCores int64) string {
-	return fmt.Sprintf("%dm", milliCores)
-}
-
-// formatMemory formats bytes to human readable format
-func formatMemory(bytes int64) string {
-	const (
-		Ki = 1024
-		Mi = Ki * 1024
-		Gi = Mi * 1024
-	)
-
-	switch {
-	case bytes >= Gi:
-		return fmt.Sprintf("%dGi", bytes/Gi)
-	case bytes >= Mi:
-		return fmt.Sprintf("%dMi", bytes/Mi)
-	case bytes >= Ki:
-		return fmt.Sprintf("%dKi", bytes/Ki)
-	default:
-		return fmt.Sprintf("%d", bytes)
-	}
-}
-
-// formatPercent formats percentage, returns "N/A" if nil
-func formatPercent(p *int) string {
-	if p == nil {
-		return "N/A"
-	}
-	return fmt.Sprintf("%d%%", *p)
-}
-
 // truncate truncates string to max length
 func truncate(s string, maxLen int) string {
 	if len(s) <= maxLen {
