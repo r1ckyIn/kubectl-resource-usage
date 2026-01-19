@@ -8,6 +8,7 @@ import (
 	"github.com/r1ckyIn/kubectl-resource-usage/pkg/collector"
 	"github.com/r1ckyIn/kubectl-resource-usage/pkg/output"
 	"github.com/spf13/cobra"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 )
 
@@ -110,6 +111,11 @@ func (o *ResourceUsageOptions) Complete(cmd *cobra.Command) error {
 
 // Validate validates the options
 func (o *ResourceUsageOptions) Validate() error {
+	if o.selector != "" {
+		if _, err := labels.Parse(o.selector); err != nil {
+			return fmt.Errorf("invalid label selector: %w", err)
+		}
+	}
 	if o.sortBy != "" && o.sortBy != "cpu" && o.sortBy != "memory" {
 		return fmt.Errorf("invalid sort field: %s (must be 'cpu' or 'memory')", o.sortBy)
 	}
@@ -197,6 +203,12 @@ func (o *ResourceUsageOptions) Run(ctx context.Context) error {
 		Field:    filterField,
 	}
 	podUsages = calculator.FilterPodUsages(podUsages, filterOpts)
+
+	// Handle empty results
+	if len(podUsages) == 0 {
+		fmt.Fprintln(o.Out, "No pods found matching the criteria")
+		return nil
+	}
 
 	// Sort if requested
 	if o.sortBy != "" {

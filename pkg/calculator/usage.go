@@ -41,8 +41,12 @@ func CalculatePodUsage(podMetric metricsv1beta1.PodMetrics, pod corev1.Pod) PodU
 	// Sum up container metrics
 	var totalCPU, totalMem resource.Quantity
 	for _, container := range podMetric.Containers {
-		totalCPU.Add(*container.Usage.Cpu())
-		totalMem.Add(*container.Usage.Memory())
+		if cpu := container.Usage.Cpu(); cpu != nil {
+			totalCPU.Add(*cpu)
+		}
+		if mem := container.Usage.Memory(); mem != nil {
+			totalMem.Add(*mem)
+		}
 	}
 
 	// Sum up container requests/limits

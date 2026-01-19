@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/rest"
 	metricsv1beta1 "k8s.io/metrics/pkg/apis/metrics/v1beta1"
@@ -32,7 +33,13 @@ func NewMetricsCollector(config *rest.Config) (*MetricsCollector, error) {
 func (c *MetricsCollector) GetPodMetrics(ctx context.Context, namespace string) (*metricsv1beta1.PodMetricsList, error) {
 	podMetrics, err := c.client.MetricsV1beta1().PodMetricses(namespace).List(ctx, metav1.ListOptions{})
 	if err != nil {
-		return nil, fmt.Errorf("failed to list pod metrics (is metrics-server installed?): %w", err)
+		if errors.IsNotFound(err) {
+			return nil, fmt.Errorf("metrics API not available: please install metrics-server")
+		}
+		if errors.IsForbidden(err) {
+			return nil, fmt.Errorf("insufficient permissions to access metrics API: %w", err)
+		}
+		return nil, fmt.Errorf("failed to list pod metrics: %w", err)
 	}
 
 	return podMetrics, nil

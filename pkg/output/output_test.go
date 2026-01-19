@@ -125,7 +125,7 @@ func TestJSONFormatter(t *testing.T) {
 	}
 
 	// Verify it's valid JSON
-	var result JSONOutput
+	var result StructuredOutput
 	err = json.Unmarshal(buf.Bytes(), &result)
 	if err != nil {
 		t.Fatalf("output is not valid JSON: %v", err)
@@ -175,7 +175,7 @@ func TestJSONFormatterWithNil(t *testing.T) {
 	}
 
 	// Verify it's valid JSON with null values
-	var result JSONOutput
+	var result StructuredOutput
 	err = json.Unmarshal(buf.Bytes(), &result)
 	if err != nil {
 		t.Fatalf("output is not valid JSON: %v", err)
@@ -229,8 +229,8 @@ func TestYAMLFormatter(t *testing.T) {
 	if !strings.Contains(output, "pod: test-pod") {
 		t.Error("expected output to contain 'pod: test-pod'")
 	}
-	if !strings.Contains(output, "requestpercent: 50") {
-		t.Error("expected output to contain 'requestpercent: 50'")
+	if !strings.Contains(output, "requestPercent: 50") {
+		t.Error("expected output to contain 'requestPercent: 50'")
 	}
 }
 
