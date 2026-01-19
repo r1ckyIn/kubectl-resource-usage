@@ -45,10 +45,11 @@ func (f *TableFormatter) Format(w io.Writer, podUsages []calculator.PodUsage) er
 	return nil
 }
 
-// truncate truncates string to max length
+// truncate truncates string to max length (rune-safe for UTF-8)
 func truncate(s string, maxLen int) string {
-	if len(s) <= maxLen {
+	runes := []rune(s)
+	if len(runes) <= maxLen {
 		return s
 	}
-	return s[:maxLen-3] + "..."
+	return string(runes[:maxLen-3]) + "..."
 }

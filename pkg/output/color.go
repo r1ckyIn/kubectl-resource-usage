@@ -15,6 +15,12 @@ const (
 	colorYellow = "\033[33m"
 )
 
+// Usage threshold percentages for color coding
+const (
+	highUsageThreshold   = 80
+	mediumUsageThreshold = 50
+)
+
 // ColorMode represents the color output mode
 type ColorMode string
 
@@ -66,9 +72,9 @@ func (c *Colorizer) FormatPercent(p *int, width int) string {
 
 	var color string
 	switch {
-	case *p >= 80:
+	case *p >= highUsageThreshold:
 		color = colorRed
-	case *p >= 50:
+	case *p >= mediumUsageThreshold:
 		color = colorYellow
 	default:
 		color = colorGreen

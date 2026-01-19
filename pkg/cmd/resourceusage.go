@@ -161,6 +161,9 @@ func (o *ResourceUsageOptions) Validate() error {
 	if o.above != -1 && o.below != -1 && o.above > o.below {
 		return fmt.Errorf("--above (%d) cannot be greater than --below (%d)", o.above, o.below)
 	}
+	if o.noLimits && (o.above != -1 || o.below != -1) {
+		return fmt.Errorf("--no-limits cannot be used with --above or --below")
+	}
 	if o.watch && (o.output == "json" || o.output == "yaml") {
 		return fmt.Errorf("watch mode is not supported with %s output format", o.output)
 	}
@@ -237,7 +240,7 @@ func (o *ResourceUsageOptions) runOnce(ctx context.Context, metricsCollector *co
 	}
 
 	// Calculate usage for each pod
-	var podUsages []calculator.PodUsage
+	podUsages := make([]calculator.PodUsage, 0, len(podMetrics.Items))
 	for _, pm := range podMetrics.Items {
 		key := pm.Namespace + "/" + pm.Name
 		podIndex, exists := podMap[key]
