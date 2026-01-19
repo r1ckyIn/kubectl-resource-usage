@@ -16,6 +16,10 @@ func NewFormatter(format string) Formatter {
 	switch format {
 	case "json":
 		return &JSONFormatter{}
+	case "yaml":
+		return &YAMLFormatter{}
+	case "wide":
+		return &WideFormatter{}
 	default:
 		return &TableFormatter{}
 	}

@@ -20,6 +20,11 @@ type ResourceUsageOptions struct {
 	sortBy    string
 	ascending bool
 	output    string
+
+	// Filter options
+	above    int
+	below    int
+	noLimits bool
 }
 
 // NewResourceUsageOptions creates a new ResourceUsageOptions with default values
@@ -28,6 +33,8 @@ func NewResourceUsageOptions(streams genericclioptions.IOStreams) *ResourceUsage
 		configFlags: genericclioptions.NewConfigFlags(true),
 		IOStreams:   streams,
 		output:      "table",
+		above:       -1,
+		below:       -1,
 	}
 }
 
@@ -54,7 +61,20 @@ relative to requests and limits, helping SREs quickly identify resource issues.`
   kubectl resource-usage --sort memory
 
   # Output as JSON
-  kubectl resource-usage -o json`,
+  kubectl resource-usage -o json
+
+  # Show pods with memory usage >= 80%
+  kubectl resource-usage --above 80
+
+  # Show pods with CPU usage <= 50%
+  kubectl resource-usage --below 50 --sort cpu
+
+  # Show pods without limits configured
+  kubectl resource-usage --no-limits
+
+  # Output as YAML or wide format
+  kubectl resource-usage -o yaml
+  kubectl resource-usage -o wide`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if err := o.Complete(cmd); err != nil {
 				return err
@@ -73,7 +93,12 @@ relative to requests and limits, helping SREs quickly identify resource issues.`
 	cmd.Flags().StringVarP(&o.selector, "selector", "l", "", "Filter by label selector (e.g., app=api)")
 	cmd.Flags().StringVar(&o.sortBy, "sort", "", "Sort by field: cpu or memory")
 	cmd.Flags().BoolVar(&o.ascending, "asc", false, "Sort in ascending order (default: descending)")
-	cmd.Flags().StringVarP(&o.output, "output", "o", "table", "Output format: table or json")
+	cmd.Flags().StringVarP(&o.output, "output", "o", "table", "Output format: table, json, yaml, or wide")
+
+	// Filter flags
+	cmd.Flags().IntVar(&o.above, "above", -1, "Show pods with usage >= N% (uses --sort field, default: memory)")
+	cmd.Flags().IntVar(&o.below, "below", -1, "Show pods with usage <= N% (uses --sort field, default: memory)")
+	cmd.Flags().BoolVar(&o.noLimits, "no-limits", false, "Show pods without limits configured")
 
 	return cmd
 }
@@ -88,8 +113,18 @@ func (o *ResourceUsageOptions) Validate() error {
 	if o.sortBy != "" && o.sortBy != "cpu" && o.sortBy != "memory" {
 		return fmt.Errorf("invalid sort field: %s (must be 'cpu' or 'memory')", o.sortBy)
 	}
-	if o.output != "table" && o.output != "json" {
-		return fmt.Errorf("invalid output format: %s (must be 'table' or 'json')", o.output)
+	validOutputs := map[string]bool{"table": true, "json": true, "yaml": true, "wide": true}
+	if !validOutputs[o.output] {
+		return fmt.Errorf("invalid output format: %s (must be 'table', 'json', 'yaml', or 'wide')", o.output)
+	}
+	if o.above != -1 && (o.above < 0 || o.above > 100) {
+		return fmt.Errorf("invalid --above value: %d (must be between 0 and 100)", o.above)
+	}
+	if o.below != -1 && (o.below < 0 || o.below > 100) {
+		return fmt.Errorf("invalid --below value: %d (must be between 0 and 100)", o.below)
+	}
+	if o.above != -1 && o.below != -1 && o.above > o.below {
+		return fmt.Errorf("--above (%d) cannot be greater than --below (%d)", o.above, o.below)
 	}
 	return nil
 }
@@ -149,6 +184,19 @@ func (o *ResourceUsageOptions) Run(ctx context.Context) error {
 		podUsage := calculator.CalculatePodUsage(pm, pods.Items[podIndex])
 		podUsages = append(podUsages, podUsage)
 	}
+
+	// Apply filters
+	filterField := o.sortBy
+	if filterField == "" {
+		filterField = "memory"
+	}
+	filterOpts := calculator.FilterOptions{
+		Above:    o.above,
+		Below:    o.below,
+		NoLimits: o.noLimits,
+		Field:    filterField,
+	}
+	podUsages = calculator.FilterPodUsages(podUsages, filterOpts)
 
 	// Sort if requested
 	if o.sortBy != "" {
