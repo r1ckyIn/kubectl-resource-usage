@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/spf13/cobra"
@@ -57,8 +58,9 @@ func NewCmdCompletion() *cobra.Command {
 				return cmd.Root().GenFishCompletion(os.Stdout, true)
 			case "powershell":
 				return cmd.Root().GenPowerShellCompletionWithDesc(os.Stdout)
+			default:
+				return fmt.Errorf("unsupported shell type: %s", args[0])
 			}
-			return nil
 		},
 	}
 

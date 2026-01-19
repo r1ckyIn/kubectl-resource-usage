@@ -111,7 +111,10 @@ payment       checkout-abc         150m        N/A        30%        128Mi      
 | `--selector` | `-l` | string | - | Filter by label selector |
 | `--sort` | - | string | - | Sort field: cpu or memory |
 | `--asc` | - | bool | false | Sort ascending (default: descending) |
-| `--output` | `-o` | string | table | Output format: table or json |
+| `--output` | `-o` | string | table | Output format: table, json, yaml, or wide |
+| `--above` | - | int | -1 | Show pods with usage >= N% (uses --sort field) |
+| `--below` | - | int | -1 | Show pods with usage <= N% (uses --sort field) |
+| `--no-limits` | - | bool | false | Show pods without limits configured |
 
 ### Shell Completion
 
@@ -227,6 +230,19 @@ kubectl resource-usage --sort cpu --asc
 # 输出 JSON 格式
 kubectl resource-usage -o json
 ```
+
+### 命令参数
+
+| 参数 | 简写 | 类型 | 默认值 | 说明 |
+|------|------|------|--------|------|
+| `--namespace` | `-n` | string | all | 按命名空间筛选 |
+| `--selector` | `-l` | string | - | 按标签选择器筛选 |
+| `--sort` | - | string | - | 排序字段：cpu 或 memory |
+| `--asc` | - | bool | false | 升序排序（默认降序） |
+| `--output` | `-o` | string | table | 输出格式：table、json、yaml 或 wide |
+| `--above` | - | int | -1 | 显示使用率 >= N% 的 Pod |
+| `--below` | - | int | -1 | 显示使用率 <= N% 的 Pod |
+| `--no-limits` | - | bool | false | 显示未配置 limits 的 Pod |
 
 ### Shell 自动补全
 
