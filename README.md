@@ -46,6 +46,16 @@
 
 ### Installation
 
+#### Via Krew (Recommended)
+
+```bash
+# Install via Krew
+kubectl krew install resource-usage
+
+# Verify installation
+kubectl resource-usage --help
+```
+
 #### From GitHub Releases
 
 ```bash
@@ -115,6 +125,10 @@ payment       checkout-abc         150m        N/A        30%        128Mi      
 | `--above` | - | int | -1 | Show pods with usage >= N% (uses --sort field) |
 | `--below` | - | int | -1 | Show pods with usage <= N% (uses --sort field) |
 | `--no-limits` | - | bool | false | Show pods without limits configured |
+| `--color` | - | string | auto | Color output: auto, always, or never |
+| `--unit` | - | string | auto | Unit for display: auto, Ki, Mi, Gi, m, or cores |
+| `--watch` | `-w` | bool | false | Watch mode: refresh output periodically |
+| `--interval` | - | duration | 2s | Refresh interval for watch mode |
 
 ### Shell Completion
 
@@ -188,6 +202,16 @@ kubectl-resource-usage/
 
 ### 安装
 
+#### 通过 Krew 安装（推荐）
+
+```bash
+# 通过 Krew 安装
+kubectl krew install resource-usage
+
+# 验证安装
+kubectl resource-usage --help
+```
+
 #### 从 GitHub Releases 下载
 
 ```bash
@@ -243,6 +267,10 @@ kubectl resource-usage -o json
 | `--above` | - | int | -1 | 显示使用率 >= N% 的 Pod |
 | `--below` | - | int | -1 | 显示使用率 <= N% 的 Pod |
 | `--no-limits` | - | bool | false | 显示未配置 limits 的 Pod |
+| `--color` | - | string | auto | 颜色输出：auto、always 或 never |
+| `--unit` | - | string | auto | 显示单位：auto、Ki、Mi、Gi、m 或 cores |
+| `--watch` | `-w` | bool | false | Watch 模式：定期刷新输出 |
+| `--interval` | - | duration | 2s | Watch 模式的刷新间隔 |
 
 ### Shell 自动补全
 

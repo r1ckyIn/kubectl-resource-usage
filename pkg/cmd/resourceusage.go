@@ -22,6 +22,12 @@ type ResourceUsageOptions struct {
 	sortBy    string
 	ascending bool
 	output    string
+	color     string
+	unit      string
+
+	// Watch options
+	watch    bool
+	interval time.Duration
 
 	// Filter options
 	above    int
@@ -35,6 +41,8 @@ func NewResourceUsageOptions(streams genericclioptions.IOStreams) *ResourceUsage
 		configFlags: genericclioptions.NewConfigFlags(true),
 		IOStreams:   streams,
 		output:      "table",
+		color:       "auto",
+		unit:        "auto",
 		above:       -1,
 		below:       -1,
 	}
@@ -76,7 +84,11 @@ relative to requests and limits, helping SREs quickly identify resource issues.`
 
   # Output as YAML or wide format
   kubectl resource-usage -o yaml
-  kubectl resource-usage -o wide`,
+  kubectl resource-usage -o wide
+
+  # Watch mode with custom interval
+  kubectl resource-usage -w
+  kubectl resource-usage --watch --interval 5s`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if err := o.Complete(cmd); err != nil {
 				return err
@@ -96,6 +108,12 @@ relative to requests and limits, helping SREs quickly identify resource issues.`
 	cmd.Flags().StringVar(&o.sortBy, "sort", "", "Sort by field: cpu or memory")
 	cmd.Flags().BoolVar(&o.ascending, "asc", false, "Sort in ascending order (default: descending)")
 	cmd.Flags().StringVarP(&o.output, "output", "o", "table", "Output format: table, json, yaml, or wide")
+	cmd.Flags().StringVar(&o.color, "color", "auto", "Color output: auto, always, or never")
+	cmd.Flags().StringVar(&o.unit, "unit", "auto", "Unit for display: auto, Ki, Mi, Gi, m, or cores")
+
+	// Watch flags
+	cmd.Flags().BoolVarP(&o.watch, "watch", "w", false, "Watch mode: refresh output periodically")
+	cmd.Flags().DurationVar(&o.interval, "interval", 2*time.Second, "Refresh interval for watch mode")
 
 	// Filter flags
 	cmd.Flags().IntVar(&o.above, "above", -1, "Show pods with usage >= N% (uses --sort field, default: memory)")
@@ -127,6 +145,13 @@ func (o *ResourceUsageOptions) Validate() error {
 	if !validOutputs[o.output] {
 		return fmt.Errorf("invalid output format: %s (must be 'table', 'json', 'yaml', or 'wide')", o.output)
 	}
+	validColors := map[string]bool{"auto": true, "always": true, "never": true}
+	if !validColors[o.color] {
+		return fmt.Errorf("invalid color mode: %s (must be 'auto', 'always', or 'never')", o.color)
+	}
+	if !output.IsValidUnit(o.unit) {
+		return fmt.Errorf("invalid unit: %s (must be one of: %v)", o.unit, output.ValidUnits())
+	}
 	if o.above != -1 && (o.above < 0 || o.above > 100) {
 		return fmt.Errorf("invalid --above value: %d (must be between 0 and 100)", o.above)
 	}
@@ -136,15 +161,17 @@ func (o *ResourceUsageOptions) Validate() error {
 	if o.above != -1 && o.below != -1 && o.above > o.below {
 		return fmt.Errorf("--above (%d) cannot be greater than --below (%d)", o.above, o.below)
 	}
+	if o.watch && (o.output == "json" || o.output == "yaml") {
+		return fmt.Errorf("watch mode is not supported with %s output format", o.output)
+	}
+	if o.interval < time.Second {
+		return fmt.Errorf("interval must be at least 1 second")
+	}
 	return nil
 }
 
 // Run executes the resource-usage command
 func (o *ResourceUsageOptions) Run(ctx context.Context) error {
-	// Add timeout to prevent hanging on slow API responses
-	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
-	defer cancel()
-
 	// Create REST config from flags
 	restConfig, err := o.configFlags.ToRESTConfig()
 	if err != nil {
@@ -167,6 +194,28 @@ func (o *ResourceUsageOptions) Run(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("failed to create pod collector: %w", err)
 	}
+
+	// Create formatter options
+	opts := output.FormatterOptions{
+		ColorMode: output.ColorMode(o.color),
+		Unit:      o.unit,
+	}
+	formatter := output.NewFormatter(o.output, opts)
+
+	// If not watch mode, run once
+	if !o.watch {
+		return o.runOnce(ctx, metricsCollector, podCollector, namespace, formatter)
+	}
+
+	// Watch mode: loop until context is cancelled
+	return o.runWatch(ctx, metricsCollector, podCollector, namespace, formatter)
+}
+
+// runOnce fetches and displays data once
+func (o *ResourceUsageOptions) runOnce(ctx context.Context, metricsCollector *collector.MetricsCollector, podCollector *collector.PodCollector, namespace string, formatter output.Formatter) error {
+	// Add timeout to prevent hanging on slow API responses
+	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	defer cancel()
 
 	// Fetch pod metrics
 	podMetrics, err := metricsCollector.GetPodMetrics(ctx, namespace)
@@ -223,7 +272,34 @@ func (o *ResourceUsageOptions) Run(ctx context.Context) error {
 		calculator.SortPodUsages(podUsages, o.sortBy, o.ascending)
 	}
 
-	// Output using formatter
-	formatter := output.NewFormatter(o.output)
 	return formatter.Format(o.Out, podUsages)
+}
+
+// runWatch runs in watch mode with periodic refresh
+func (o *ResourceUsageOptions) runWatch(ctx context.Context, metricsCollector *collector.MetricsCollector, podCollector *collector.PodCollector, namespace string, formatter output.Formatter) error {
+	ticker := time.NewTicker(o.interval)
+	defer ticker.Stop()
+
+	// Run immediately first time
+	o.clearScreen()
+	if err := o.runOnce(ctx, metricsCollector, podCollector, namespace, formatter); err != nil {
+		fmt.Fprintf(o.ErrOut, "Error: %v\n", err)
+	}
+
+	for {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-ticker.C:
+			o.clearScreen()
+			if err := o.runOnce(ctx, metricsCollector, podCollector, namespace, formatter); err != nil {
+				fmt.Fprintf(o.ErrOut, "Error: %v\n", err)
+			}
+		}
+	}
+}
+
+// clearScreen clears the terminal screen
+func (o *ResourceUsageOptions) clearScreen() {
+	fmt.Fprint(o.Out, "\033[H\033[2J")
 }

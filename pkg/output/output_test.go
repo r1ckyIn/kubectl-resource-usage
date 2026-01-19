@@ -34,7 +34,7 @@ func TestTableFormatter(t *testing.T) {
 	}
 
 	var buf bytes.Buffer
-	formatter := &TableFormatter{}
+	formatter := &TableFormatter{colorizer: NewColorizer(ColorModeNever), unitFormatter: NewUnitFormatter("auto")}
 	err := formatter.Format(&buf, podUsages)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -82,7 +82,7 @@ func TestTableFormatterWithNA(t *testing.T) {
 	}
 
 	var buf bytes.Buffer
-	formatter := &TableFormatter{}
+	formatter := &TableFormatter{colorizer: NewColorizer(ColorModeNever), unitFormatter: NewUnitFormatter("auto")}
 	err := formatter.Format(&buf, podUsages)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -258,7 +258,7 @@ func TestWideFormatter(t *testing.T) {
 	}
 
 	var buf bytes.Buffer
-	formatter := &WideFormatter{}
+	formatter := &WideFormatter{colorizer: NewColorizer(ColorModeNever), unitFormatter: NewUnitFormatter("auto")}
 	err := formatter.Format(&buf, podUsages)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -319,7 +319,7 @@ func TestWideFormatterWithNA(t *testing.T) {
 	}
 
 	var buf bytes.Buffer
-	formatter := &WideFormatter{}
+	formatter := &WideFormatter{colorizer: NewColorizer(ColorModeNever), unitFormatter: NewUnitFormatter("auto")}
 	err := formatter.Format(&buf, podUsages)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -332,34 +332,128 @@ func TestWideFormatterWithNA(t *testing.T) {
 }
 
 func TestNewFormatter(t *testing.T) {
+	opts := FormatterOptions{ColorMode: ColorModeNever, Unit: "auto"}
+
 	// Test table formatter (default)
-	tableFormatter := NewFormatter("table")
+	tableFormatter := NewFormatter("table", opts)
 	if _, ok := tableFormatter.(*TableFormatter); !ok {
 		t.Error("expected TableFormatter for 'table' format")
 	}
 
 	// Test JSON formatter
-	jsonFormatter := NewFormatter("json")
+	jsonFormatter := NewFormatter("json", opts)
 	if _, ok := jsonFormatter.(*JSONFormatter); !ok {
 		t.Error("expected JSONFormatter for 'json' format")
 	}
 
 	// Test YAML formatter
-	yamlFormatter := NewFormatter("yaml")
+	yamlFormatter := NewFormatter("yaml", opts)
 	if _, ok := yamlFormatter.(*YAMLFormatter); !ok {
 		t.Error("expected YAMLFormatter for 'yaml' format")
 	}
 
 	// Test Wide formatter
-	wideFormatter := NewFormatter("wide")
+	wideFormatter := NewFormatter("wide", opts)
 	if _, ok := wideFormatter.(*WideFormatter); !ok {
 		t.Error("expected WideFormatter for 'wide' format")
 	}
 
 	// Test unknown format defaults to table
-	unknownFormatter := NewFormatter("unknown")
+	unknownFormatter := NewFormatter("unknown", opts)
 	if _, ok := unknownFormatter.(*TableFormatter); !ok {
 		t.Error("expected TableFormatter for unknown format")
+	}
+}
+
+func TestUnitFormatter(t *testing.T) {
+	tests := []struct {
+		name        string
+		unit        string
+		milliCores  int64
+		bytes       int64
+		wantCPU     string
+		wantMemory  string
+	}{
+		{"auto units", "auto", 100, 134217728, "100m", "128Mi"},
+		{"millicores", "m", 2500, 0, "2500m", "0"},
+		{"cores", "cores", 2500, 0, "2.5", "0"},
+		{"Ki units", "Ki", 0, 1048576, "0m", "1024Ki"},
+		{"Mi units", "Mi", 0, 134217728, "0m", "128Mi"},
+		{"Gi units", "Gi", 0, 1073741824, "0m", "1Gi"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			f := NewUnitFormatter(tt.unit)
+
+			gotCPU := f.FormatCPU(tt.milliCores)
+			if gotCPU != tt.wantCPU {
+				t.Errorf("FormatCPU() = %v, want %v", gotCPU, tt.wantCPU)
+			}
+
+			gotMemory := f.FormatMemory(tt.bytes)
+			if gotMemory != tt.wantMemory {
+				t.Errorf("FormatMemory() = %v, want %v", gotMemory, tt.wantMemory)
+			}
+		})
+	}
+}
+
+func TestIsValidUnit(t *testing.T) {
+	validUnits := []string{"auto", "Ki", "Mi", "Gi", "m", "cores"}
+	for _, u := range validUnits {
+		if !IsValidUnit(u) {
+			t.Errorf("expected %q to be valid", u)
+		}
+	}
+
+	invalidUnits := []string{"invalid", "gb", "MB", ""}
+	for _, u := range invalidUnits {
+		if IsValidUnit(u) {
+			t.Errorf("expected %q to be invalid", u)
+		}
+	}
+}
+
+func TestColorizer(t *testing.T) {
+	tests := []struct {
+		name     string
+		mode     ColorMode
+		percent  *int
+		width    int
+		wantRed  bool
+		wantGreen bool
+		wantYellow bool
+	}{
+		{"high usage with color", ColorModeAlways, intPtr(85), 10, true, false, false},
+		{"medium usage with color", ColorModeAlways, intPtr(60), 10, false, false, true},
+		{"low usage with color", ColorModeAlways, intPtr(30), 10, false, true, false},
+		{"nil with color", ColorModeAlways, nil, 10, false, false, false},
+		{"high usage no color", ColorModeNever, intPtr(85), 10, false, false, false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			c := NewColorizer(tt.mode)
+			result := c.FormatPercent(tt.percent, tt.width)
+
+			hasRed := strings.Contains(result, "\033[31m")
+			hasGreen := strings.Contains(result, "\033[32m")
+			hasYellow := strings.Contains(result, "\033[33m")
+
+			if tt.wantRed && !hasRed {
+				t.Errorf("expected red color for high usage")
+			}
+			if tt.wantGreen && !hasGreen {
+				t.Errorf("expected green color for low usage")
+			}
+			if tt.wantYellow && !hasYellow {
+				t.Errorf("expected yellow color for medium usage")
+			}
+			if tt.mode == ColorModeNever && (hasRed || hasGreen || hasYellow) {
+				t.Errorf("expected no color when mode is never")
+			}
+		})
 	}
 }
 

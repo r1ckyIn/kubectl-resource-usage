@@ -57,3 +57,32 @@ release:
   draft: false
   prerelease: auto
   name_template: "{{.ProjectName}} v{{.Version}}"
+  extra_files:
+    - glob: .krew.yaml
+
+krews:
+  - name: resource-usage
+    ids:
+      - default
+    repository:
+      owner: r1ckyIn
+      name: kubectl-resource-usage
+    commit_author:
+      name: r1ckyIn
+      email: rickyqin919@gmail.com
+    homepage: https://github.com/r1ckyIn/kubectl-resource-usage
+    short_description: Display Pod CPU/Memory usage percentage
+    description: |
+      A kubectl plugin that displays Pod-level CPU/Memory resource usage
+      percentages. Unlike `kubectl top pods` which only shows raw values,
+      this plugin calculates usage percentages relative to requests and limits,
+      helping SREs quickly identify resource issues.
+
+      Features:
+      - Calculate CPU/Memory Request% and Limit%
+      - Filter by namespace (-n) or label selector (-l)
+      - Sort by CPU or Memory usage rate (--sort)
+      - Multiple output formats: table, json, yaml, wide
+      - Filter by usage threshold (--above, --below)
+      - Find pods without limits configured (--no-limits)
+    skip_upload: true

@@ -9,7 +9,10 @@ import (
 )
 
 // WideFormatter formats output as a wide table with requests/limits raw values
-type WideFormatter struct{}
+type WideFormatter struct {
+	colorizer     *Colorizer
+	unitFormatter *UnitFormatter
+}
 
 // Format writes pod usages as a wide table
 func (f *WideFormatter) Format(w io.Writer, podUsages []calculator.PodUsage) error {
@@ -31,19 +34,19 @@ func (f *WideFormatter) Format(w io.Writer, podUsages []calculator.PodUsage) err
 
 	// Print rows
 	for _, pu := range podUsages {
-		fmt.Fprintf(w, "%-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s\n",
+		fmt.Fprintf(w, "%-*s %-*s %-*s %-*s %-*s %s %s %-*s %-*s %-*s %s %s %-*s\n",
 			wideColNamespace, truncate(pu.Namespace, wideColNamespace),
 			wideColPod, truncate(pu.Name, wideColPod),
-			wideColUsage, formatCPU(pu.CPU.Usage.MilliValue()),
-			wideColReqLim, formatQuantityOrNA(pu.CPU.Requests),
-			wideColReqLim, formatQuantityOrNA(pu.CPU.Limits),
-			wideColPercent, formatPercent(pu.CPU.RequestPercent),
-			wideColPercent, formatPercent(pu.CPU.LimitPercent),
-			wideColUsage, formatMemory(pu.Memory.Usage.Value()),
-			wideColReqLim, formatMemoryQuantityOrNA(pu.Memory.Requests),
-			wideColReqLim, formatMemoryQuantityOrNA(pu.Memory.Limits),
-			wideColPercent, formatPercent(pu.Memory.RequestPercent),
-			wideColPercent, formatPercent(pu.Memory.LimitPercent),
+			wideColUsage, f.unitFormatter.FormatCPU(pu.CPU.Usage.MilliValue()),
+			wideColReqLim, f.formatCPUQuantityOrNA(pu.CPU.Requests),
+			wideColReqLim, f.formatCPUQuantityOrNA(pu.CPU.Limits),
+			f.colorizer.FormatPercent(pu.CPU.RequestPercent, wideColPercent),
+			f.colorizer.FormatPercent(pu.CPU.LimitPercent, wideColPercent),
+			wideColUsage, f.unitFormatter.FormatMemory(pu.Memory.Usage.Value()),
+			wideColReqLim, f.formatMemoryQuantityOrNA(pu.Memory.Requests),
+			wideColReqLim, f.formatMemoryQuantityOrNA(pu.Memory.Limits),
+			f.colorizer.FormatPercent(pu.Memory.RequestPercent, wideColPercent),
+			f.colorizer.FormatPercent(pu.Memory.LimitPercent, wideColPercent),
 			wideColNode, truncate(pu.Node, wideColNode),
 		)
 	}
@@ -51,18 +54,18 @@ func (f *WideFormatter) Format(w io.Writer, podUsages []calculator.PodUsage) err
 	return nil
 }
 
-// formatQuantityOrNA formats a CPU quantity or returns "N/A"
-func formatQuantityOrNA(q *resource.Quantity) string {
+// formatCPUQuantityOrNA formats a CPU quantity or returns "N/A"
+func (f *WideFormatter) formatCPUQuantityOrNA(q *resource.Quantity) string {
 	if q == nil {
 		return "N/A"
 	}
-	return formatCPU(q.MilliValue())
+	return f.unitFormatter.FormatCPU(q.MilliValue())
 }
 
 // formatMemoryQuantityOrNA formats a memory quantity or returns "N/A"
-func formatMemoryQuantityOrNA(q *resource.Quantity) string {
+func (f *WideFormatter) formatMemoryQuantityOrNA(q *resource.Quantity) string {
 	if q == nil {
 		return "N/A"
 	}
-	return formatMemory(q.Value())
+	return f.unitFormatter.FormatMemory(q.Value())
 }

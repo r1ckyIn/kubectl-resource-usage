@@ -8,7 +8,10 @@ import (
 )
 
 // TableFormatter formats output as a table
-type TableFormatter struct{}
+type TableFormatter struct {
+	colorizer     *Colorizer
+	unitFormatter *UnitFormatter
+}
 
 // Format writes pod usages as a table
 func (f *TableFormatter) Format(w io.Writer, podUsages []calculator.PodUsage) error {
@@ -26,15 +29,15 @@ func (f *TableFormatter) Format(w io.Writer, podUsages []calculator.PodUsage) er
 
 	// Print rows
 	for _, pu := range podUsages {
-		fmt.Fprintf(w, "%-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s\n",
+		fmt.Fprintf(w, "%-*s %-*s %-*s %s %s %-*s %s %s %-*s\n",
 			tableColNamespace, truncate(pu.Namespace, tableColNamespace),
 			tableColPod, truncate(pu.Name, tableColPod),
-			tableColCPUUsage, formatCPU(pu.CPU.Usage.MilliValue()),
-			tableColPercent, formatPercent(pu.CPU.RequestPercent),
-			tableColPercent, formatPercent(pu.CPU.LimitPercent),
-			tableColMemUsage, formatMemory(pu.Memory.Usage.Value()),
-			tableColPercent, formatPercent(pu.Memory.RequestPercent),
-			tableColPercent, formatPercent(pu.Memory.LimitPercent),
+			tableColCPUUsage, f.unitFormatter.FormatCPU(pu.CPU.Usage.MilliValue()),
+			f.colorizer.FormatPercent(pu.CPU.RequestPercent, tableColPercent),
+			f.colorizer.FormatPercent(pu.CPU.LimitPercent, tableColPercent),
+			tableColMemUsage, f.unitFormatter.FormatMemory(pu.Memory.Usage.Value()),
+			f.colorizer.FormatPercent(pu.Memory.RequestPercent, tableColPercent),
+			f.colorizer.FormatPercent(pu.Memory.LimitPercent, tableColPercent),
 			tableColNode, truncate(pu.Node, tableColNode),
 		)
 	}

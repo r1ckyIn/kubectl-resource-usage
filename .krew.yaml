@@ -1,0 +1,58 @@
+apiVersion: krew.googlecontainertools.github.com/v1alpha2
+kind: Plugin
+metadata:
+  name: resource-usage
+spec:
+  version: {{ .TagName }}
+  homepage: https://github.com/r1ckyIn/kubectl-resource-usage
+  shortDescription: Display Pod CPU/Memory usage percentage
+  description: |
+    A kubectl plugin that displays Pod-level CPU/Memory resource usage
+    percentages. Unlike `kubectl top pods` which only shows raw values,
+    this plugin calculates usage percentages relative to requests and limits,
+    helping SREs quickly identify resource issues.
+
+    Features:
+    - Calculate CPU/Memory Request% and Limit%
+    - Filter by namespace (-n) or label selector (-l)
+    - Sort by CPU or Memory usage rate (--sort)
+    - Multiple output formats: table, json, yaml, wide
+    - Filter by usage threshold (--above, --below)
+    - Find pods without limits configured (--no-limits)
+  platforms:
+  - selector:
+      matchLabels:
+        os: linux
+        arch: amd64
+    {{addURIAndSha "https://github.com/r1ckyIn/kubectl-resource-usage/releases/download/{{ .TagName }}/kubectl-resource_usage_{{ .TagName }}_linux_amd64.tar.gz" .TagName }}
+    bin: kubectl-resource_usage
+  - selector:
+      matchLabels:
+        os: linux
+        arch: arm64
+    {{addURIAndSha "https://github.com/r1ckyIn/kubectl-resource-usage/releases/download/{{ .TagName }}/kubectl-resource_usage_{{ .TagName }}_linux_arm64.tar.gz" .TagName }}
+    bin: kubectl-resource_usage
+  - selector:
+      matchLabels:
+        os: darwin
+        arch: amd64
+    {{addURIAndSha "https://github.com/r1ckyIn/kubectl-resource-usage/releases/download/{{ .TagName }}/kubectl-resource_usage_{{ .TagName }}_darwin_amd64.tar.gz" .TagName }}
+    bin: kubectl-resource_usage
+  - selector:
+      matchLabels:
+        os: darwin
+        arch: arm64
+    {{addURIAndSha "https://github.com/r1ckyIn/kubectl-resource-usage/releases/download/{{ .TagName }}/kubectl-resource_usage_{{ .TagName }}_darwin_arm64.tar.gz" .TagName }}
+    bin: kubectl-resource_usage
+  - selector:
+      matchLabels:
+        os: windows
+        arch: amd64
+    {{addURIAndSha "https://github.com/r1ckyIn/kubectl-resource-usage/releases/download/{{ .TagName }}/kubectl-resource_usage_{{ .TagName }}_windows_amd64.zip" .TagName }}
+    bin: kubectl-resource_usage.exe
+  - selector:
+      matchLabels:
+        os: windows
+        arch: arm64
+    {{addURIAndSha "https://github.com/r1ckyIn/kubectl-resource-usage/releases/download/{{ .TagName }}/kubectl-resource_usage_{{ .TagName }}_windows_arm64.zip" .TagName }}
+    bin: kubectl-resource_usage.exe

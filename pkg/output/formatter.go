@@ -11,17 +11,26 @@ type Formatter interface {
 	Format(w io.Writer, podUsages []calculator.PodUsage) error
 }
 
+// FormatterOptions contains options for formatters
+type FormatterOptions struct {
+	ColorMode ColorMode
+	Unit      string
+}
+
 // NewFormatter creates a formatter based on the format type
-func NewFormatter(format string) Formatter {
+func NewFormatter(format string, opts FormatterOptions) Formatter {
+	colorizer := NewColorizer(opts.ColorMode)
+	unitFormatter := NewUnitFormatter(opts.Unit)
+
 	switch format {
 	case "json":
 		return &JSONFormatter{}
 	case "yaml":
 		return &YAMLFormatter{}
 	case "wide":
-		return &WideFormatter{}
+		return &WideFormatter{colorizer: colorizer, unitFormatter: unitFormatter}
 	default:
-		return &TableFormatter{}
+		return &TableFormatter{colorizer: colorizer, unitFormatter: unitFormatter}
 	}
 }
 
