@@ -39,3 +39,6 @@ bin/
 # Debug files
 *.log
 debug/
+
+# Claude Code configuration
+CLAUDE.md
