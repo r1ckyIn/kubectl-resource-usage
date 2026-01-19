@@ -113,6 +113,22 @@ payment       checkout-abc         150m        N/A        30%        128Mi      
 | `--asc` | - | bool | false | Sort ascending (default: descending) |
 | `--output` | `-o` | string | table | Output format: table or json |
 
+### Shell Completion
+
+```bash
+# Bash
+source <(kubectl resource-usage completion bash)
+
+# Zsh
+source <(kubectl resource-usage completion zsh)
+
+# Fish
+kubectl resource-usage completion fish | source
+
+# PowerShell
+kubectl resource-usage completion powershell | Out-String | Invoke-Expression
+```
+
 ### Project Structure
 
 ```
@@ -210,6 +226,22 @@ kubectl resource-usage --sort cpu --asc
 
 # 输出 JSON 格式
 kubectl resource-usage -o json
+```
+
+### Shell 自动补全
+
+```bash
+# Bash
+source <(kubectl resource-usage completion bash)
+
+# Zsh
+source <(kubectl resource-usage completion zsh)
+
+# Fish
+kubectl resource-usage completion fish | source
+
+# PowerShell
+kubectl resource-usage completion powershell | Out-String | Invoke-Expression
 ```
 
 ### 技术栈

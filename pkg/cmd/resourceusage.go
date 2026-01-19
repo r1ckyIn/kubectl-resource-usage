@@ -102,6 +102,9 @@ relative to requests and limits, helping SREs quickly identify resource issues.`
 	cmd.Flags().IntVar(&o.below, "below", -1, "Show pods with usage <= N% (uses --sort field, default: memory)")
 	cmd.Flags().BoolVar(&o.noLimits, "no-limits", false, "Show pods without limits configured")
 
+	// Add completion subcommand
+	cmd.AddCommand(NewCmdCompletion())
+
 	return cmd
 }
 
