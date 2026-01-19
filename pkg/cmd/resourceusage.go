@@ -3,6 +3,7 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/r1ckyIn/kubectl-resource-usage/pkg/calculator"
 	"github.com/r1ckyIn/kubectl-resource-usage/pkg/collector"
@@ -137,6 +138,10 @@ func (o *ResourceUsageOptions) Validate() error {
 
 // Run executes the resource-usage command
 func (o *ResourceUsageOptions) Run(ctx context.Context) error {
+	// Add timeout to prevent hanging on slow API responses
+	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	defer cancel()
+
 	// Create REST config from flags
 	restConfig, err := o.configFlags.ToRESTConfig()
 	if err != nil {

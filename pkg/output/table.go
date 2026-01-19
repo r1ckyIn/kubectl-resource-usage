@@ -13,21 +13,29 @@ type TableFormatter struct{}
 // Format writes pod usages as a table
 func (f *TableFormatter) Format(w io.Writer, podUsages []calculator.PodUsage) error {
 	// Print header
-	fmt.Fprintf(w, "%-14s %-40s %-11s %-10s %-10s %-11s %-10s %-10s %-15s\n",
-		"NAMESPACE", "POD", "CPU_USAGE", "CPU_REQ%", "CPU_LIM%", "MEM_USAGE", "MEM_REQ%", "MEM_LIM%", "NODE")
+	fmt.Fprintf(w, "%-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s\n",
+		tableColNamespace, "NAMESPACE",
+		tableColPod, "POD",
+		tableColCPUUsage, "CPU_USAGE",
+		tableColPercent, "CPU_REQ%",
+		tableColPercent, "CPU_LIM%",
+		tableColMemUsage, "MEM_USAGE",
+		tableColPercent, "MEM_REQ%",
+		tableColPercent, "MEM_LIM%",
+		tableColNode, "NODE")
 
 	// Print rows
 	for _, pu := range podUsages {
-		fmt.Fprintf(w, "%-14s %-40s %-11s %-10s %-10s %-11s %-10s %-10s %-15s\n",
-			truncate(pu.Namespace, 14),
-			truncate(pu.Name, 40),
-			formatCPU(pu.CPU.Usage.MilliValue()),
-			formatPercent(pu.CPU.RequestPercent),
-			formatPercent(pu.CPU.LimitPercent),
-			formatMemory(pu.Memory.Usage.Value()),
-			formatPercent(pu.Memory.RequestPercent),
-			formatPercent(pu.Memory.LimitPercent),
-			truncate(pu.Node, 15),
+		fmt.Fprintf(w, "%-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s\n",
+			tableColNamespace, truncate(pu.Namespace, tableColNamespace),
+			tableColPod, truncate(pu.Name, tableColPod),
+			tableColCPUUsage, formatCPU(pu.CPU.Usage.MilliValue()),
+			tableColPercent, formatPercent(pu.CPU.RequestPercent),
+			tableColPercent, formatPercent(pu.CPU.LimitPercent),
+			tableColMemUsage, formatMemory(pu.Memory.Usage.Value()),
+			tableColPercent, formatPercent(pu.Memory.RequestPercent),
+			tableColPercent, formatPercent(pu.Memory.LimitPercent),
+			tableColNode, truncate(pu.Node, tableColNode),
 		)
 	}
 

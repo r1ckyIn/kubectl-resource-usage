@@ -13,7 +13,7 @@ import (
 
 // MetricsCollector fetches pod metrics from the Kubernetes Metrics API
 type MetricsCollector struct {
-	client *metricsclient.Clientset
+	client metricsclient.Interface
 }
 
 // NewMetricsCollector creates a new MetricsCollector

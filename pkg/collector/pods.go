@@ -12,7 +12,7 @@ import (
 
 // PodCollector fetches Pod specs from the Kubernetes API
 type PodCollector struct {
-	client *kubernetes.Clientset
+	client kubernetes.Interface
 }
 
 // NewPodCollector creates a new PodCollector

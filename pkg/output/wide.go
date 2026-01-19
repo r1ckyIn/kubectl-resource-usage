@@ -14,26 +14,37 @@ type WideFormatter struct{}
 // Format writes pod usages as a wide table
 func (f *WideFormatter) Format(w io.Writer, podUsages []calculator.PodUsage) error {
 	// Print header
-	fmt.Fprintf(w, "%-12s %-30s %-9s %-9s %-9s %-8s %-8s %-9s %-9s %-9s %-8s %-8s %-12s\n",
-		"NAMESPACE", "POD", "CPU_USAGE", "CPU_REQ", "CPU_LIM", "CPU_R%", "CPU_L%",
-		"MEM_USAGE", "MEM_REQ", "MEM_LIM", "MEM_R%", "MEM_L%", "NODE")
+	fmt.Fprintf(w, "%-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s\n",
+		wideColNamespace, "NAMESPACE",
+		wideColPod, "POD",
+		wideColUsage, "CPU_USAGE",
+		wideColReqLim, "CPU_REQ",
+		wideColReqLim, "CPU_LIM",
+		wideColPercent, "CPU_R%",
+		wideColPercent, "CPU_L%",
+		wideColUsage, "MEM_USAGE",
+		wideColReqLim, "MEM_REQ",
+		wideColReqLim, "MEM_LIM",
+		wideColPercent, "MEM_R%",
+		wideColPercent, "MEM_L%",
+		wideColNode, "NODE")
 
 	// Print rows
 	for _, pu := range podUsages {
-		fmt.Fprintf(w, "%-12s %-30s %-9s %-9s %-9s %-8s %-8s %-9s %-9s %-9s %-8s %-8s %-12s\n",
-			truncate(pu.Namespace, 12),
-			truncate(pu.Name, 30),
-			formatCPU(pu.CPU.Usage.MilliValue()),
-			formatQuantityOrNA(pu.CPU.Requests),
-			formatQuantityOrNA(pu.CPU.Limits),
-			formatPercent(pu.CPU.RequestPercent),
-			formatPercent(pu.CPU.LimitPercent),
-			formatMemory(pu.Memory.Usage.Value()),
-			formatMemoryQuantityOrNA(pu.Memory.Requests),
-			formatMemoryQuantityOrNA(pu.Memory.Limits),
-			formatPercent(pu.Memory.RequestPercent),
-			formatPercent(pu.Memory.LimitPercent),
-			truncate(pu.Node, 12),
+		fmt.Fprintf(w, "%-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s\n",
+			wideColNamespace, truncate(pu.Namespace, wideColNamespace),
+			wideColPod, truncate(pu.Name, wideColPod),
+			wideColUsage, formatCPU(pu.CPU.Usage.MilliValue()),
+			wideColReqLim, formatQuantityOrNA(pu.CPU.Requests),
+			wideColReqLim, formatQuantityOrNA(pu.CPU.Limits),
+			wideColPercent, formatPercent(pu.CPU.RequestPercent),
+			wideColPercent, formatPercent(pu.CPU.LimitPercent),
+			wideColUsage, formatMemory(pu.Memory.Usage.Value()),
+			wideColReqLim, formatMemoryQuantityOrNA(pu.Memory.Requests),
+			wideColReqLim, formatMemoryQuantityOrNA(pu.Memory.Limits),
+			wideColPercent, formatPercent(pu.Memory.RequestPercent),
+			wideColPercent, formatPercent(pu.Memory.LimitPercent),
+			wideColNode, truncate(pu.Node, wideColNode),
 		)
 	}
 
