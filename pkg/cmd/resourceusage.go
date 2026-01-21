@@ -266,7 +266,7 @@ func (o *ResourceUsageOptions) runOnce(ctx context.Context, metricsCollector *co
 
 	// Handle empty results
 	if len(podUsages) == 0 {
-		fmt.Fprintln(o.Out, "No pods found matching the criteria")
+		_, _ = fmt.Fprintln(o.Out, "No pods found matching the criteria")
 		return nil
 	}
 
@@ -286,7 +286,7 @@ func (o *ResourceUsageOptions) runWatch(ctx context.Context, metricsCollector *c
 	// Run immediately first time
 	o.clearScreen()
 	if err := o.runOnce(ctx, metricsCollector, podCollector, namespace, formatter); err != nil {
-		fmt.Fprintf(o.ErrOut, "Error: %v\n", err)
+		_, _ = fmt.Fprintf(o.ErrOut, "Error: %v\n", err)
 	}
 
 	for {
@@ -296,7 +296,7 @@ func (o *ResourceUsageOptions) runWatch(ctx context.Context, metricsCollector *c
 		case <-ticker.C:
 			o.clearScreen()
 			if err := o.runOnce(ctx, metricsCollector, podCollector, namespace, formatter); err != nil {
-				fmt.Fprintf(o.ErrOut, "Error: %v\n", err)
+				_, _ = fmt.Fprintf(o.ErrOut, "Error: %v\n", err)
 			}
 		}
 	}
@@ -304,5 +304,5 @@ func (o *ResourceUsageOptions) runWatch(ctx context.Context, metricsCollector *c
 
 // clearScreen clears the terminal screen
 func (o *ResourceUsageOptions) clearScreen() {
-	fmt.Fprint(o.Out, "\033[H\033[2J")
+	_, _ = fmt.Fprint(o.Out, "\033[H\033[2J")
 }

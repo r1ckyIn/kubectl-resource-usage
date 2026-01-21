@@ -16,7 +16,7 @@ type TableFormatter struct {
 // Format writes pod usages as a table
 func (f *TableFormatter) Format(w io.Writer, podUsages []calculator.PodUsage) error {
 	// Print header
-	fmt.Fprintf(w, "%-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s\n",
+	if _, err := fmt.Fprintf(w, "%-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s\n",
 		tableColNamespace, "NAMESPACE",
 		tableColPod, "POD",
 		tableColCPUUsage, "CPU_USAGE",
@@ -25,11 +25,13 @@ func (f *TableFormatter) Format(w io.Writer, podUsages []calculator.PodUsage) er
 		tableColMemUsage, "MEM_USAGE",
 		tableColPercent, "MEM_REQ%",
 		tableColPercent, "MEM_LIM%",
-		tableColNode, "NODE")
+		tableColNode, "NODE"); err != nil {
+		return err
+	}
 
 	// Print rows
 	for _, pu := range podUsages {
-		fmt.Fprintf(w, "%-*s %-*s %-*s %s %s %-*s %s %s %-*s\n",
+		if _, err := fmt.Fprintf(w, "%-*s %-*s %-*s %s %s %-*s %s %s %-*s\n",
 			tableColNamespace, truncate(pu.Namespace, tableColNamespace),
 			tableColPod, truncate(pu.Name, tableColPod),
 			tableColCPUUsage, f.unitFormatter.FormatCPU(pu.CPU.Usage.MilliValue()),
@@ -39,7 +41,9 @@ func (f *TableFormatter) Format(w io.Writer, podUsages []calculator.PodUsage) er
 			f.colorizer.FormatPercent(pu.Memory.RequestPercent, tableColPercent),
 			f.colorizer.FormatPercent(pu.Memory.LimitPercent, tableColPercent),
 			tableColNode, truncate(pu.Node, tableColNode),
-		)
+		); err != nil {
+			return err
+		}
 	}
 
 	return nil

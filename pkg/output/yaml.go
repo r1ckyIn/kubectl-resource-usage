@@ -11,10 +11,14 @@ import (
 type YAMLFormatter struct{}
 
 // Format writes pod usages as YAML
-func (f *YAMLFormatter) Format(w io.Writer, podUsages []calculator.PodUsage) error {
+func (f *YAMLFormatter) Format(w io.Writer, podUsages []calculator.PodUsage) (err error) {
 	output := toStructuredOutput(podUsages)
 	encoder := yaml.NewEncoder(w)
 	encoder.SetIndent(2)
-	defer encoder.Close()
+	defer func() {
+		if closeErr := encoder.Close(); closeErr != nil && err == nil {
+			err = closeErr
+		}
+	}()
 	return encoder.Encode(output)
 }
