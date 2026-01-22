@@ -37,9 +37,9 @@ func (c *MetricsCollector) GetPodMetrics(ctx context.Context, namespace string) 
 			return nil, fmt.Errorf("metrics API not available: please install metrics-server")
 		}
 		if errors.IsForbidden(err) {
-			return nil, fmt.Errorf("insufficient permissions to access metrics API: %w", err)
+			return nil, fmt.Errorf("insufficient permissions to access metrics API")
 		}
-		return nil, fmt.Errorf("failed to list pod metrics: %w", err)
+		return nil, fmt.Errorf("failed to list pod metrics")
 	}
 
 	return podMetrics, nil
